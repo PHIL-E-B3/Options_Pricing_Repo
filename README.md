@@ -90,4 +90,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ### Author
 
-*Your Name Here*
+*Philip Bunford *
