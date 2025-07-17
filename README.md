@@ -8,7 +8,7 @@
 
 ## 🚀 Overview
 
-UBP\_Repo lets you move from idea ➜ Monte‑Carlo simulation ➜ publication‑quality plots in just a few lines of code. Whether you need quick Black‑Scholes analytics or full‑blown barrier‑option pricing, everything lives in one coherent API.
+Options\_Pricing\_Repo lets you move from idea ➜ Monte‑Carlo simulation ➜ publication‑quality plots in just a few lines of code. Whether you need quick Black‑Scholes analytics or full‑blown barrier‑option pricing, everything lives in one coherent API.
 
 ---
 
@@ -42,8 +42,8 @@ UBP\_Repo lets you move from idea ➜ Monte‑Carlo simulation ➜ publication�
 
 ```bash
 # 1. Get the code
-$ git clone https://github.com/your‑org/UBP_Repo.git
-$ cd UBP_Repo
+$ git clone https://github.com/your‑org/Options_Pricing_Repo.git
+$ cd Options_Pricing_Repo
 
 # 2. Install dependencies (conda or venv recommended)
 $ pip install -r requirements.txt
@@ -55,7 +55,7 @@ $ python main.py  # or open main.ipynb
 ### 5‑Line Example
 
 ```python
-from ubp_repo.vanilla import blackscholesvanilla
+from Options_Pricing_Repo.vanilla import blackscholesvanilla
 price = blackscholesvanilla(S0=100, K=105, T=0.5, r=0.02, sigma=0.25, option_type="call")
 print(f"Call price: {price:.4f}")
 ```
