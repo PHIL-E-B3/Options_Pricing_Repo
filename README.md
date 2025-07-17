@@ -6,7 +6,7 @@ Helper files:
 miscellaneous - contains helper functions including a geom bm creation file. 
 
 Main file: 
-main - where we test everything
+- main - where we test everything
 
 Vanilla: --------------
 Call and put
