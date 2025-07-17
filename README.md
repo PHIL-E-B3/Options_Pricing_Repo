@@ -1,4 +1,4 @@
-# UBP\_Repo
+# Options\_Pricing\_Repo
 
 ![Build](https://img.shields.io/badge/build-passing-brightgreen) ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
