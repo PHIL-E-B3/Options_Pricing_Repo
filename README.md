@@ -62,15 +62,6 @@ print(f"Call price: {price:.4f}")
 
 ---
 
-## 🗺️ Roadmap
-
-* [ ] Add time‑dependent vol surfaces
-* [ ] Extend `StrucProd` to handle autocallables & reverse convertibles
-* [ ] GPU acceleration via CuPy
-* [ ] Continuous integration with real market data regression tests
-
----
-
 ## 🤝 Contributing
 
 1. Fork the repo & create your branch (`git checkout -b feature/awesome‑feature`).
@@ -90,4 +81,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ### Author
 
-*Philip Bunford *
+*Philip Bunford*
