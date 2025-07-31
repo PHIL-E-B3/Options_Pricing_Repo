@@ -3,12 +3,17 @@ import numpy as np
 from scipy.stats import norm
 import matplotlib.pyplot as plt
  
+
+
+# Init parameters  -------------------------------------------------------------------------------------------------- init params
+ 
 K = 100       # Strike price
 r = 0.05      # Risk-free rate
 T = 1         # Time to expiration (in years)
 vol = 0.2     # Volatility
-
-
+ 
+# phi -------------------------------------------------------------------------------------------------- phi
+ 
 def phi(x):
     """ Phi helper function
     """
@@ -16,7 +21,14 @@ def phi(x):
  
 # gamma --------------------------------------------------------------------------------------------------gamma
  
-# shared
+# +------------------------------------------------------+
+# |                                                      |
+# | SHARED GREEKS (Vega and Gamma same for calls + Puts)                    
+# |                                                      |
+# +------------------------------------------------------+
+ 
+# shared gamma
+ 
 def gamma(S, K, r, T, vol):
     """ Black-Scholes gamma
     :param S: underlying
@@ -43,6 +55,13 @@ def vega(S, K, r, T, vol):
     d1 = (1.0 / (vol * np.sqrt(T))) * (np.log(S / K) + (r + 0.5 * vol ** 2.0) * T)
     return (S * phi(d1) * np.sqrt(T)) / 100.0
  
+# +--------------------------------------------------+
+# |                                                  |
+# |                  CALL GREEKS                    
+# |                                                  |
+# +--------------------------------------------------+
+
+
 # call greeks ----------------------------------------------------------------------------------------call greeks
  
 def call_delta(S, K, r, T, vol):
@@ -93,6 +112,13 @@ def call_rho(S, K, r, T, vol):
     rho = K * T * np.exp(-r * T) * N(d2)
     return rho / 100.0
  
+# +--------------------------------------------------+
+# |                                                  |
+# |                  PUT GREEKS                    
+# |                                                  |
+# +--------------------------------------------------+
+
+
 # put greeks  -------------------------------------------------------------------------------------- PUT greeks
  
 def put_delta(S, K, r, T, vol):
@@ -105,7 +131,7 @@ def put_delta(S, K, r, T, vol):
     :return: put delta
     """
     d1 = (1.0 / (vol * np.sqrt(T))) * (np.log(S / K) + (r + 0.5 * vol ** 2.0) * T)
-    return N(d1) - 1.0
+    return norm.cdf(d1) - 1.0
  
 # put theta -------------------------------------------------------------------------------------------  put theta
  
@@ -139,9 +165,17 @@ def put_rho(S, K, r, T, vol):
     rho = -K * T * np.exp(-r * T) * N(-d2)
     return rho / 100.0
  
+# +--------------------------------------------------+
+# |                                                  |
+# |                PLOTTING GREEKS                    
+# |                                                  |
+# +--------------------------------------------------+
+
+
+
 # Plotting theta -------------------------------------------------------------------------------------------plot theta
  
-def plot_theta_():
+def plot_call_theta_(show=True):
     x = np.linspace(0.01, K * 1.6, 600)
    
     theta_values = []
@@ -157,12 +191,12 @@ def plot_theta_():
     plt.ylabel('Theta ')
     plt.legend()
     plt.tight_layout()
-    plt.show()
-    plt.pause(0.1)
+    if show:
+        plt.show()
  
 # Plotting gamma ------------------------------------------------------------------------------------------- plot gamma
  
-def plot_gamma_():
+def plot_gamma_(show=True):
     x = np.linspace(0.01, K * 1.6, 600)
    
     gamma_values = []
@@ -178,12 +212,13 @@ def plot_gamma_():
     plt.ylabel('Gamma ')
     plt.legend()
     plt.tight_layout()
-    plt.show()
-    plt.pause(0.1)
+    if show:
+        plt.show()
+ 
  
 # Plotting rho ----------------------------------------------------------------------------------------------- plot rho
  
-def plot_rho_():
+def plot_call_rho_(show=True):
     x = np.linspace(0.01, K * 1.6, 600)
    
     rho_values = []
@@ -199,12 +234,12 @@ def plot_rho_():
     plt.ylabel('Rho ')
     plt.legend()
     plt.tight_layout()
-    plt.show()
-    plt.pause(0.1)
+    if show:
+        plt.show()
  
 # Plotting vega ------------------------------------------------------------------------------------------------- plot vega
  
-def plot_vega_():
+def plot_vega_(show=True):
     x = np.linspace(0.01, K * 1.6, 600)
    
     vega_values = []
@@ -220,12 +255,12 @@ def plot_vega_():
     plt.ylabel('vega ')
     plt.legend()
     plt.tight_layout()
-    plt.show()
-    plt.pause(0.1)
+    if show:
+        plt.show()
  
 # Plotting delta ------------------------------------------------------------------------------------------------- plot delta
  
-def plot_delta_():
+def plot_call_delta_(show=True):
  
     x = np.linspace(0.01, K * 1.6, 600)
    
@@ -239,12 +274,13 @@ def plot_delta_():
     plt.ylabel('delta ')
     plt.legend()
     plt.tight_layout()
-    plt.show()
-    plt.pause(0.1)
- 
+    if show:
+        plt.show()
+
+
 # Plotting All Greeks -------------------------------------------------------------------------------------------- plot all greeks
  
-def plot_greeks_():
+def plot_call_greeks_(show=True):
     x = np.linspace(0.01, K * 1.6, 600)
    
     delta_values = [call_delta(number, K, r, T, vol) for number in x]
@@ -280,11 +316,11 @@ def plot_greeks_():
     axs[4].axvline(K, color='green', ls=':', label=f'Strike = {K}')
     axs[4].title.set_text('Gamma')
  
-    plt.pause(0.1)
-
-
+    if show:
+        plt.show()
+ 
 # plot multiple delta values for different mat. ---------------------------------------------------------
-def plot_multiple_deltas(K, r, vol, *maturities):
+def plot_multiple_deltas(K, r, vol, *maturities, show=True):
     """
     Plots delta for different maturities on the same graph.
  
@@ -308,47 +344,23 @@ def plot_multiple_deltas(K, r, vol, *maturities):
     plt.ylabel('Delta')
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
  
 # Correct function call
 # plot_multiple_deltas(100, 0.05, 0.2, 0.1, 0.2, 0.3, 0.4, 0.5, 1, 2)
 
 
-'''
-gamma_yn = input('Do you want to plot gamma? (y/n)')
-theta_yn = input('Do you want to plot theta? (y/n)')
-rho_yn = input('Do you want to plot rho? (y/n)')
-delta_yn = input('Do you want to plot delta? (y/n)')
-vega_yn = input('Do you want to plot vega? (y/n)')
- 
-'''
- 
-# plot all greeks ---------------------------------------------------------------------------------------plot all greeks
- 
+
 def plot_all_greeks():
-    count = 0
-    while True:
-        corr_string_1 = 'y'
-        corr_string_2 = 'n'
- 
-        try:
-            gamma_yn = input('Do you want to plot greeks? (y/n)')
-            if gamma_yn != corr_string_1 and gamma_yn != corr_string_2:
-                raise ValueError("Error: Incorrect String entered. Please enter 'y' or 'n'.")
-            else:
-                plot_gamma_()
-                plot_delta_()
-                plot_vega_()
-                plot_rho_()
-                plot_theta_()
-                plot_greeks_()
-               
-                plt.show()
-                break
-        except ValueError as e:
-            print(e)
- 
+    """Plots all Greeks on separate figures and displays them together."""
+    plot_call_theta_(show=False)
+    plot_gamma_(show=False)
+    plot_call_rho_(show=False)
+    plot_vega_(show=False)
+    plot_call_delta_(show=False)
+    plot_call_greeks_(show=False)
+    plt.show()  # Display all plots together
+   
 if __name__ == "__main__":
     plot_all_greeks()
-    plt.show()
- 

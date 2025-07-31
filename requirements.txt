@@ -1,0 +1,7 @@
+matplotlib
+scipy
+pandas
+numpy
+colorama 
+seaborn
+openpyxl
