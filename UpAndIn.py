@@ -5,37 +5,23 @@ import numpy as np
 from colorama import Fore, Style
 # Choose the barrier type
  
-'''
- 
-Use when ready to have user input functions:
- 
-S_0 = int(input("What's your initial price? ")) #initial price --> this will be automated once on Blab
-r = float(input("What's your RFR? "))
-sigma = float(input("What's your vol in decimals? ")) #vol
-T = int(input("What's your Maturity? ")) # 1year
-N = 252 #no of trad. days
-n_sims = int(input("How many MC Simulations do you want? "))
-BARRIER = int(input("What's your Barrier: "))
-K = int(input("What's your Strike? ")) #strike
- 
-'''
- 
-S_0 = 55 * 1.10
-r = 0.06
-sigma = 0.2
-T = 1 * 0.5
+S_0 = 330.15 # NVDA current price
+r = 0.03974
+sigma = 0.5
+T = 1
 N = 252 * T
  
-BARRIER = 65
-K = 60
-n_sims = 1000
+BARRIER = 200
+K = S_0 * 1.0 # change according to
+n_sims = 10000
+div_yield = 0.03833
  
-observation = input("Please enter if you want 'european' or 'daily' observation: ")
+observation = 'european' #change to daily if daily
  
 dt = T / N
 discount_factor = np.exp(-r * T)
  
-gbm_sims = simulate_gbm(s_0=S_0, mu=r, sigma=sigma, dt=dt,n_sims=n_sims)
+gbm_sims = simulate_gbm(s_0=S_0, mu=r, sigma=sigma, dt=dt,n_sims=n_sims,N=N,div_yield=div_yield)
 print(gbm_sims.shape)
  
 def UpAndInCall(gbm_sims, K, BARRIER, discount_factor, observation='european'):
@@ -72,7 +58,7 @@ def UpAndInCall(gbm_sims, K, BARRIER, discount_factor, observation='european'):
 
 # 1) Sample of simulated paths + barrier / strike ---------------------------------------------------
  
-def plot_UpAndInCall():
+def plot_MC_UpAndInCall(show=True):
     plt.figure(figsize=(9,4))
     sample = np.random.choice(n_sims, size=min(30, n_sims), replace=False)
  
@@ -84,11 +70,12 @@ def plot_UpAndInCall():
     plt.xlabel('Time step')
     plt.ylabel('Underlying price')
     plt.legend()
-    plt.show()
+    if show:
+        plt.show()
 
 
 # 2) Histogram of Monte-Carlo pay-offs (discounted) -----------------------------------------
-def plot_hist_UpAndInCall():
+def plot_hist_UpAndInCall(show=True):
     hit = gbm_sims.max(axis=1) > BARRIER
     payoffs = np.where(
         hit,
@@ -103,11 +90,12 @@ def plot_hist_UpAndInCall():
     plt.xlabel('Pay-off')
     plt.ylabel('Frequency')
     plt.grid(True)
-    plt.show()
+    if show:
+        plt.show()
  
 # Cumulative knock-in fraction (up-and-in) ------------------------------------------------------
  
-def plot_cum_KI():
+def plot_cum_KI(show=True):
     cum_max = np.maximum.accumulate(gbm_sims, axis=1)
  
     cum_hit = (cum_max >= BARRIER)
@@ -122,11 +110,12 @@ def plot_cum_KI():
     plt.ylim(0, 1) # keeps the line inside the frame
     plt.grid(True, ls='--', lw=0.5)
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
  
 # Static payoff profile (undiscounted) ------------------------------------------------------
  
-def plot_UpAndInCall():
+def plot_UpAndInCall(show=True):
     x = np.linspace(0, BARRIER * 1.6, 600) # grid of S_T values (barrier x 1.6 ensures the whole price path is as least as big as 1.6 times the barrier)
  
     payoff_profile = np.where(x >= BARRIER,
@@ -143,11 +132,19 @@ def plot_UpAndInCall():
     plt.legend()
     plt.grid(True, ls='--', lw=0.5)
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
 
 
-if __name__ == "__main__":
+
+
+def plot_all_UpAndIn():
     UpAndInCall(gbm_sims=gbm_sims, K=K, BARRIER=BARRIER, discount_factor=discount_factor, observation=observation)
-    plot_UpAndInCall()
-    plot_cum_KI()
-    plot_hist_UpAndInCall()
+    plot_UpAndInCall(show=False)
+    plot_cum_KI(show=False)
+    plot_hist_UpAndInCall(show=False)
+    plot_MC_UpAndInCall(show=False)
+    plt.show()
+ 
+if __name__ == "__main__":
+    plot_all_UpAndIn()
