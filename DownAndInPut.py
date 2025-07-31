@@ -1,29 +1,29 @@
-# Coding the final payoff, graph etc. of a Down and In Put Option
-
-from gbm import simulate_gbm
+from miscellaneous import simulate_gbm
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from colorama import Fore, Style
+ 
+# ----------------------------------- CODING DOWN AND IN CALL (or PUT) ----------------------------------------------
  
 # Here we define our initial parameters --------------------------------------------------
  
 S_0 = 100
-r = 0.06
+r = 0.04
 sigma = 0.5
- 
-BARRIER = 45
-K = 60
+K = 100  # Strike price
+BARRIER = 80  # Barrier level
 n_sims = 100_000
- 
 T = 1
 N = 252
 dt = T / N
 discount_factor = np.exp(-r * T)
- 
-observation = input("Please enter if you want 'european' or 'daily' observation: ")
- 
+observation = 'daily' #european if you want european
+div_yield = 0.003
+
+
 # Let's simulate the GBM paths here --------------------------------------------------
-gbm_sims = simulate_gbm(s_0=S_0, mu=r, sigma=sigma, dt=dt,n_sims=n_sims)
+gbm_sims = simulate_gbm(s_0=S_0, mu=r, sigma=sigma, dt=dt, n_sims=n_sims, N=N, div_yield=div_yield)
  
 def DownAndInPut(gbm_sims, K, BARRIER, discount_factor, observation='european'):
     """
@@ -43,79 +43,86 @@ def DownAndInPut(gbm_sims, K, BARRIER, discount_factor, observation='european'):
         np.maximum(0, K - gbm_sims[:, -1]),
         0)
  
+    if BARRIER > K:
+        print("You should input a Barrier < K")
+ 
     premium = discount_factor * payoff.mean()
-    print(f"Price of the Down and In put: {premium:.4f}")
+    print(f"Price of the Down and In Put: {premium:.4f}")
+ 
+    hit = (gbm_sims.max(axis=1) >= BARRIER)
+    hit_rate = hit.mean()
+    print(f"{Fore.RED}Hit rate from MC simulation: {hit_rate * 100:.2f}%{Style.RESET_ALL}")
+ 
     return premium
  
-premium = DownAndInPut(gbm_sims=gbm_sims, K=K, BARRIER=BARRIER, discount_factor=discount_factor)
-
-
 # Sample of simulated paths + barrier / strike ----------------------------------------------
-plt.figure(figsize=(9,4))
-sample = np.random.choice(n_sims, size=min(30, n_sims), replace=False)
+def plot_MC_DownAndInPut(n_sims, gbm_sims, BARRIER, K, show=True):
+    plt.figure(figsize=(9,4))
+    sample = np.random.choice(n_sims, size=min(30, n_sims), replace=False)
  
-for idx in sample:
-    plt.plot(gbm_sims[idx], alpha=0.4)
-plt.axhline(BARRIER, color='red', ls='--', label=f'Barrier = {BARRIER}')
-plt.axhline(K, color='green', ls=':', label=f'Strike = {K}')
-plt.title('Subset of GBM paths')
-plt.xlabel('Time step')
-plt.ylabel('Underlying price')
-plt.legend()
+    for idx in sample:
+        plt.plot(gbm_sims[idx], alpha=0.4)
+    plt.axhline(BARRIER, color='red', ls='--', label=f'Barrier = {BARRIER}')
+    plt.axhline(K, color='green', ls=':', label=f'Strike = {K}')
+    plt.title('Subset of GBM paths')
+    plt.xlabel('Time step')
+    plt.ylabel('Underlying price')
+    plt.legend()
+    if show: 
+        plt.show()
+    
  
 # Histogram of Monte-Carlo pay-offs (discounted) -----------------------------------------------
-hit = gbm_sims.max(axis=1) > BARRIER
-payoffs = np.where(
-    hit,
-    np.maximum(0, K- gbm_sims[:,-1]),
-    0)
+def plot_hist_DownAndInPut(show=True):        
+    hit = gbm_sims.max(axis=1) > BARRIER
+    payoffs = np.where(
+        hit,
+        np.maximum(0, K- gbm_sims[:,-1]),
+        0)
  
-disc_pay = discount_factor * payoffs
+    disc_pay = discount_factor * payoffs
  
-plt.figure(figsize=(6,4))
-plt.hist(disc_pay, bins=50, edgecolor='k')
-plt.title('Distribution of discounted pay-offs')
-plt.xlabel('Pay-off')
-plt.ylabel('Frequency')
-plt.grid(True)
- 
-# Cumulative knock-in fraction (up-and-in) ----------------------------------
- 
-cum_max = np.maximum.accumulate(gbm_sims, axis=1) # Running maximum of each simulated path
-cum_hit = (cum_max <= BARRIER) # Has each path ever crossed the barrier?
-knockin_ratio = cum_hit.mean(axis=0) # At each time-step, what fraction of paths have knocked in so far?
- 
-plt.figure(figsize=(6, 4))
-plt.plot(knockin_ratio, lw=2)
-plt.title('Cumulative fraction of paths that have knocked in')
-plt.xlabel('Time step')
-plt.ylabel('Knock-in probability so far')
-plt.ylim(0, 1) # keeps the line inside the frame
-plt.grid(True, ls='--', lw=0.5)
-plt.tight_layout()
+    plt.figure(figsize=(6,4))
+    plt.hist(disc_pay, bins=50, edgecolor='k', color='skyblue', alpha=0.7)
+    plt.title('Distribution of discounted pay-offs')
+    plt.xlabel('Pay-off')
+    plt.ylabel('Frequency')
+    plt.tight_layout()
+    plt.grid(True)
+    if show: 
+        plt.show()    
 
 
+# Static payoff profile (undiscounted)----------------------------------------------------------------
+def plot_DownAndInPut(show=True):
+    x = np.linspace(0, BARRIER * 1.6, 600)  # Grid of S_T values
+ 
+    # Short put payoff graph is min(S_t - X, 0)
+    # Payoff logic for a down-and-in put
+    payoff_profile = np.where(x <= BARRIER,  # If the barrier is breached
+                            np.minimum(x - K, 0),  # Payoff is max(K - S_T, 0)
+                            0)  # Otherwise, payoff is 0
+ 
+    # Plotting the payoff profile
+    plt.figure(figsize=(7, 4))
+    plt.plot(x, payoff_profile, lw=2, label='Payoff')
+    plt.axvline(BARRIER, color='red', ls='--', label=f'Barrier = {BARRIER}')
+    plt.axvline(K, color='green', ls=':', label=f'Strike = {K}')
+    plt.title('Down-and-In Put: Payoff vs Final Price $S_T$')
+    plt.xlabel(r'Final underlying price $S_T$')
+    plt.ylabel('Payoff at $T$ (undiscounted)')
+    plt.legend()
+    plt.grid(True, ls='--', lw=0.5)
+    plt.tight_layout()
+    if show: 
+        plt.show()
+ 
+   
+if __name__ == "__main__":
 
-# Static payoff profile (undiscounted) ---------------------------
-x = np.linspace(0, BARRIER * 1.6, 600) # grid of S_T values (barrier x 1.6 ensures the whole price path is as least as big as 1.6 times the barrier)
+    plot_DownAndInPut(show=False)
+    DownAndInPut(gbm_sims=gbm_sims, K=K, BARRIER=BARRIER, discount_factor=discount_factor)
+    plot_hist_DownAndInPut(show=False)
+    plot_MC_DownAndInPut(n_sims=n_sims, gbm_sims=gbm_sims, BARRIER=BARRIER, K=K,show=False)
  
-payoff_profile = np.where(x <= BARRIER,
- np.maximum(0, K - x),
- 0)
- 
-plt.figure(figsize=(7, 4))
-plt.plot(x, payoff_profile, lw=2, label='Payoff')
-plt.axvline(BARRIER, color='red', ls='--', label=f'Barrier = {BARRIER}')
-plt.axvline(K, color='green', ls=':', label=f'Strike = {K}')
-plt.title('Down-and-In Put : Payoff vs Final Price $S_T$')
-plt.xlabel(r'Final underlying price $S_T$')
-plt.ylabel('Payoff at $T$ (undiscounted)')
-plt.legend()
-plt.grid(True, ls='--', lw=0.5)
-plt.tight_layout()
-plt.show()
- 
-# Hit rate from Monte-Carlo simulation ----------------------
-hit = (gbm_sims.max(axis=1) <= BARRIER)
-hit_rate = hit.mean()
-print(f"Hit rate from MC simulation: {hit_rate * 100:.2f}%")
+    plt.show()
