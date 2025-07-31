@@ -4,24 +4,21 @@ import pandas as pd
 import numpy as np
 from colorama import Fore, Style
  
-# ----------------------------------- CODING AN UP AND OUT CALL (Or Put) ----------------------------------------------
+# Parameters ---------------------------------------------------------------------------------------------------------params
  
 S_0 = 55
 r = 0.06
 sigma = 0.2
 T = 1
 N = 252
- 
 BARRIER = 80
 K = 60
 n_sims = 10000
- 
-# Deciding if the observation will be european or daily -------------------------------------
- 
 dt = T / N
 discount_factor = np.exp(-r * T)
+div_yield = 0.002
  
-# Let's simulate the GBM paths here --------------------------------------------------
+# ----------------------------------- CODING AN UP AND OUT CALL (Or Put) ----------------------------------------------
  
 def UpAndOut(gbm_sims, K, BARRIER, discount_factor, observation='european', option_type='call'):
     """
@@ -53,7 +50,8 @@ def UpAndOut(gbm_sims, K, BARRIER, discount_factor, observation='european', opti
  
     return premium
  
-# Plot 1) Sample of simulated paths + barrier / strike -------------------------------------------
+# Plot 1) Sample of simulated paths + barrier / strike -------------------------------------------\
+ 
 def UpAndOut_MC_plot():
     plt.figure(figsize=(9,4))
     sample = np.random.choice(n_sims, size=min(30, n_sims), replace=False)
@@ -115,33 +113,114 @@ def UpAndOut_plot(option_type):
  
 #if you want to test out the file use: ---------------------------------------------------------------------
  
-'''
-gbm_sims = simulate_gbm(s_0=S_0, mu=r, sigma=sigma, dt=dt,n_sims=n_sims)
-print(f"The shape of the GeomBM paths is: {gbm_sims.shape}")
+if __name__ == "__main__":
  
-observation = input("Please enter if you want 'european' or 'daily' observation: ").strip().lower()
-option_type = input("Are you pricing a call or put? (enter 'call' or 'put'): ").strip().lower()
+    gbm_sims = simulate_gbm(s_0=S_0, mu=r, sigma=sigma, dt=dt,n_sims=n_sims,div_yield=div_yield)
+    print(f"The shape of the GeomBM paths is: {gbm_sims.shape}")
  
-if observation not in ['european', 'daily']:
-    raise ValueError("Invalid observation type. Please enter 'european' or 'daily'.")
-if option_type not in ['call', 'put']:
-    raise ValueError("Invalid option type. Please enter 'call' or 'put'.")
+    observation = 'daily'
+    option_type = 'call'
  
-print("Generating plots and calculating the option price...")
+    if observation not in ['european', 'daily']:
+        raise ValueError("Invalid observation type. Please enter 'european' or 'daily'.")
+    if option_type not in ['call', 'put']:
+        raise ValueError("Invalid option type. Please enter 'call' or 'put'.")
  
-UpAndOut_plot(option_type=option_type)
+    print("Generating plots and calculating the option price...")
  
-UpAndOut_hist(option_type=option_type, discount_factor=discount_factor)
+    UpAndOut_plot(option_type=option_type)
  
-premium = UpAndOut(
-    gbm_sims=gbm_sims,
-    K=K,
-    BARRIER=BARRIER,
-    discount_factor=discount_factor,
-    observation=observation,
-    option_type=option_type
-)
+    UpAndOut_hist(option_type=option_type, discount_factor=discount_factor)
  
-UpAndOut_MC_plot()
-print(f"All tasks completed. The calculated premium is: {premium:.4f}")
-'''
+    premium = UpAndOut(
+        gbm_sims=gbm_sims,
+        K=K,
+        BARRIER=BARRIER,
+        discount_factor=discount_factor,
+        observation=observation,
+        option_type=option_type
+    )
+ 
+    UpAndOut_MC_plot()
+    print(f"All tasks completed. The calculated premium is: {premium:.4f}")
+
+
+def up_and_out_mtm_matrix(
+    S_0,
+    price_factors=(0.90, 1.00, 1.10),       # 90 %, 100 %, 110 %
+    tenors=(0.5, 1.0, 2.5),                 # in years
+    r=0.06,
+    sigma=0.2,
+    K=60,
+    BARRIER=80,
+    n_sims=10_000,
+    N_per_year=252,
+    option_type="call",
+    observation="daily",
+    excel_file=r"M:\PB\Python_projects\UBP_Repo\up_and_out_mtm_matrix.xlsx"  # obviously here put in your own path!
+    ):
+ 
+    """
+    Builds a price matrix (rows = spot factors, columns = tenors) and
+    saves it to `excel_file`.
+    """
+    # Prepare empty DataFrame
+    df = pd.DataFrame(
+        index=[f"{int(pf*100)}%" for pf in price_factors],
+        columns=tenors,
+        dtype=float,
+    )
+ 
+    # Loop over all tenor / spot-factor combinations
+    for T in tenors:
+        N = int(N_per_year * T)         # time steps ∝ tenor
+        dt = T / N
+        discount = np.exp(-r * T)
+ 
+        for pf in price_factors:
+            S_start = S_0 * pf  # create the price as a percentage
+ 
+            # fresh GBM paths for this scenario
+            sims = simulate_gbm(
+                s_0=S_start,
+                mu=r,
+                sigma=sigma,
+                dt=dt,
+                n_sims=n_sims,
+            )
+ 
+            price = UpAndOut(
+                gbm_sims=sims,
+                K=K,
+                BARRIER=BARRIER,
+                discount_factor=discount,
+                observation=observation,
+                option_type=option_type,
+            )
+ 
+            df.loc[f"{int(pf*100)}%", T] = price
+ 
+    # Save & echo
+    df.to_excel(excel_file, float_format="%.6f")  # Save as Excel file
+    print(f"\nPrice matrix written to '{excel_file}':\n")
+    print(df)
+ 
+    return df
+ 
+if __name__ == "__main__":
+ 
+    up_and_out_mtm_matrix(
+        S_0=S_0,
+        price_factors=(0.90, 1.00, 1.10),       # 90 %, 100 %, 110 %
+        tenors=(2.0, 1.0, 0.5),                 # in years
+        r=0.06,
+        sigma=0.2,
+        K=60,
+        BARRIER=80,
+        n_sims=10_000,
+        N_per_year=252,
+        option_type="call",
+        observation="daily",
+        excel_file="up_and_out_mtm_matrix.xlsx",
+    )
+ 

@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+ 
 # import bql # to import only when using this file within bloomberg. 0
 '''bq = bql.Service()
  
@@ -34,27 +36,69 @@ def get_bloomieticker_price():
 ##---------------------------------------------##
 # Function for Simulating gbm paths              ------------------------------------------------------------
 ##---------------------------------------------##
+
+
+
+# Parameters
+s_0 = 176.675          # Initial stock price
+mu = 0.05      # Risk-free rate
+sigma = 0.5        # Volatility
+T = 1              # Time to maturity (1 year)
+N = 252            # Number of trading days
+dt = T / N         # Time step
+n_sims = 10000     # Number of simulations
+div_yield = 0.02   # Dividend yield
  
-T = 1 # 1year
-N = 252 #no of trad. days
-dt = T / N
+def simulate_gbm(s_0, mu, sigma, dt, n_sims, N, div_yield=0.0, random_seed=102):
+    """
+    Simulate stock returns using Geometric Brownian Motion with dividend yield.
  
-def simulate_gbm(s_0, mu, sigma, dt, n_sims, random_seed=102):
-    """Simulate stock returns using Geometric Brownian Motion."""
-   
+    Parameters:
+    - s_0: Initial stock price
+    - mu: Risk-free rate
+    - sigma: Volatility
+    - dt: Time step
+    - n_sims: Number of simulations
+    - N: Number of time steps
+    - div_yield: Dividend yield (default is 0.0)
+    - random_seed: Seed for reproducibility (default is 102)
+ 
+    Returns:
+    - S_t: Simulated stock price paths (n_sims x (N + 1))
+    """
     np.random.seed(random_seed)
  
-    # scale is the standard deviation of the distribution (from which you take the draws)
-    # size is the output shape: n_sim rows and N columns
-        # n_sim rows (1000) by N columns (252)
-    # in discrete time, increments dt are scaled by the square root of time step to maintain the properties of the continuous process
-    dW = np.random.normal(scale=np.sqrt(dt), size=(n_sims, N + 1))
+    # Initialize the stock price array
+    S_t = np.zeros((n_sims, N + 1))
+    S_t[:, 0] = s_0  # Set the initial stock price
  
-    # simulate the evolution of the process
-    S_t = s_0 * np.exp(np.cumsum((mu - 0.5 * sigma**2) * dt + sigma * dW, axis=1))
-    S_t[:, 0] = s_0 #corrects the first column value and places the first price inside of it
+    # Generate random normal increments
+    dW = np.random.normal(scale=np.sqrt(dt), size=(n_sims, N))
+ 
+    # Adjust the drift term to account for the dividend yield
+    drift = (mu - div_yield - 0.5 * sigma**2) * dt
+ 
+    # Simulate the evolution of the process
+    for t in range(1, N + 1):
+        S_t[:, t] = S_t[:, t - 1] * np.exp(drift + sigma * dW[:, t - 1])
  
     return S_t
+
+
+# Simulate GBM paths
+ 
+# Plot a subset of paths
+def plot_GBM(show=True):
+    plt.figure(figsize=(10, 6))
+    for i in range(30):  # Plot 30 random paths
+        plt.plot(gbm_paths[i], alpha=0.5)
+    plt.title('Simulated GBM Paths')
+    plt.xlabel('Time Steps')
+    plt.ylabel('Stock Price')
+    if show:
+        plt.show()
  
 if __name__ == "__main__":
-    simulate_gbm(s_0, mu, sigma, dt, n_sims, random_seed=102)
+    gbm_paths = simulate_gbm(s_0=s_0, mu=mu, sigma=sigma, dt=dt, n_sims=n_sims, N=N, div_yield=div_yield)
+    plot_GBM(show=False)
+    plt.show()
